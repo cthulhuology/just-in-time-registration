@@ -57,7 +57,7 @@ The universal JITR lambda function takes the following actions when a new device
  
   - **commonName** - Identifies the device common name on the platform.
   - **serialNumber** - Allows to uniquely address your device on the platform (used in our AWS IoT policy to enforce the device permissions on the platform.
-  - **subjectAltName** - Identifies the type of the device, supported values are `greengrass` or `iot` to identify a non-Greengrass device. This field will be used to determine whether the invoked Lambda function should create a Greengrass Core in addition to the thing 
+  - **title** - Identifies the type of the device, supported values are `greengrass` or `iot` to identify a non-Greengrass device. This field will be used to determine whether the invoked Lambda function should create a Greengrass Core in addition to the thing in the AWS IoT device registry.
  
 > These three required attributes will be associated to the created `Thing` in the AWS IoT device registry as searchable attributes. This will allow you to easily query the registry for these attributes across your entire fleet.
 
