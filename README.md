@@ -21,7 +21,6 @@ Lead Maintainer: [Halim Qarroum](mailto:hqm.post@gmail.com)
  - [Certificate fields](#certificate-fields)
  - [Pre-requisites](#pre-requisites)
  - [Deployment](#deployment)
- - [Template parameters](#template-parameters)
  - [Command-line tools](#command-line-tools)
  - [See also](#see-also)
  
@@ -55,14 +54,11 @@ The universal JITR lambda function takes the following actions when a new device
  
  You can embed any standard field into your X.509 certificates, but to enforce consistency and create appropriate semantics across a fleet, this implementation requires you to provide the following fields in the device certificate :
  
-  - **commonName** - Identifies the device common name on the platform.
-  - **serialNumber** - Allows to uniquely address your device on the platform (used in our AWS IoT policy to enforce the device permissions on the platform.
-  - **title** - Identifies the type of the device, supported values are `greengrass` or `iot` to identify a non-Greengrass device. This field will be used to determine whether the invoked Lambda function should create a Greengrass Core in addition to the thing in the AWS IoT device registry.
-  - **
+  - **serialNumber** - Allows to uniquely address your device on the platform (used in our AWS IoT policy to enforce the device permissions on the platform).
+  - **title** - Identifies the type of the device, supported values are `greengrass` to identify Greengrass devices or `iot` to identify a non-Greengrass device. This field will be used to determine whether the invoked Lambda function should create a Greengrass Core in addition to the thing in the AWS IoT device registry.
+  - **generationQualifier** - The product identifier associated with the created thing. This will associate the created thing with a `product-id` attribute having this field as value.
  
-> These three required attributes will be associated to the created `Thing` in the AWS IoT device registry as searchable attributes. This will allow you to easily query the registry for these attributes across your entire fleet.
-
-All the other certificate attributes contained in the certificate are associated with non-searchable attributes on the created `Thing` object.
+> These required attributes will be associated to the created `Thing` in the AWS IoT device registry as searchable attributes. All the other certificate attributes contained in the certificate will be associated with non-searchable attributes on the created `Thing` object.
 
  ## Pre-requisites
 
@@ -78,8 +74,6 @@ A few components are required as dependencies to this project before using the s
 To deploy this template on your account, simply click on the *Launch Stack* quick-link we provide down below (the template will be deployed in the *us-east-1* region by default, to change this setting, simply change your region in the top-right hand corner of the console after clicking the link).
 
 [![Launch Stack](https://s3.amazonaws.com/cloudformation-examples/cloudformation-launch-stack.png)](https://console.aws.amazon.com/cloudformation/home?region=us-east-1#/stacks/new?stackName=aws-iot-just-in-time-registration&templateURL=https://github.com/HQarroum/just-in-time-registration/blob/master/cloudformation/cloudformation.yml)
-
-## Template parameters
 
 For the sake of genericity, the template provides you with the ability to inject parameters before deploying the stack in the *Parameters* step of the CloudFormation deployment wizard.
 
@@ -115,6 +109,12 @@ As such, if the certificate's subject fields contains the serial number of the d
 
 ```js
 thing-<%= certificate.attributes.subject.serialNumber %>
+```
+
+Note that most X.509 fields are associated with acronyms rather than full names, for instance the *common name* of a subject field in the certificate will be addressable with the `CN` identifier :
+
+```js
+thing-<%= certificate.attributes.subject.CN %>
 ```
 
 ## Command-line tools
@@ -168,3 +168,7 @@ If you have registered multiple account credentilas into your AWS CLI's configur
 ```bash
 AWS_PROFILE=my-profile ./create-and-register-ca.sh
 ```
+
+## See Also
+
+ - [ansible-greengrass](https://github.com/green-platform/ansible-greengrass) - An automated device provisioning for AWS Greengrass with Ansible.
