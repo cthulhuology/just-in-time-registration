@@ -42,7 +42,7 @@ This implementation allows device owners to provision devices by embedding speci
 The universal JITR lambda function takes the following actions when a new device connects to the platform :
 
  - It validates the certificate fields (see the [Certificate fields](#certificate-fields) section for more information on required fields. If the fields are incorrect, the registration process is aborted.
- - It optionally asynchronoysly calls an external implementer-provided Lambda function which can be served as a callback to define whether to continue the registration process or not. This can come in handy when implementers maintain a Certificate Revocation List (CRL) for instance, but can be used for any purpose really.
+ - It optionally asynchronoysly calls an external implementer-provided Lambda function which can be served as a callback to define whether to continue the registration process or not. This can come in handy when implementers maintain a [Certificate Revocation List (CRL)](https://en.wikipedia.org/wiki/Certificate_revocation_list) for instance, but can be used for any purpose really.
  - It creates a thing associated with the new device which will be provisioned with its certificates attributes.
  - It associates your thing to a thing type.
  - It creates a policy associated with your things.
@@ -117,8 +117,8 @@ thing-<%= certificate.attributes.serialNumber %>
 
 This project features two scripts in the `bin` directory :
 
-  - [`create-and-register-ca.sh`](bin/create-and-register-ca.sh) starts the process of creating a Certificate Authority and will, if you accept it, register the newly created certificate on AWS IoT, activate it, and enable its auto registration status.
-  - [`create-device-certificate.sh`](bin/create-device-certificate.sh) uses a previously created Certificate Authority to sign a new device certificate which is ready to be provisionned on a device.
+  - [`create-and-register-ca.sh`](bin/create-and-register-ca.sh) starts the process of creating an X.509 Root Certificate of Authority and will, if you accept it, register the newly created certificate on AWS IoT, activate it, and enable its auto registration status.
+  - [`create-device-certificate.sh`](bin/create-device-certificate.sh) uses a previously created Root Certificate of Authority to sign a new device certificate which is ready to be provisionned on a device.
 
 In order to be able to execute the above scripts, make sure that they are executable. On a Unix system, you can run `chmod +x <your_script>` in order to do so.
 
@@ -126,9 +126,9 @@ In order to be able to execute the above scripts, make sure that they are execut
 
 The `create-and-register-ca.sh` script does not take mandatory arguments, but you can specify optional one:
 
-  - `-c` takes as an option the name of the resulting CA file. For example, `-c foo` will produce the `foo.key`, the `foo.pem` and the `foo.srl` files. Its default value is `my-ca-certificate`.
-  - `-p` takes as an option the name of the private key created as a result of the CSR associated with the registration code. Its default value is `private-key-registration`.
-  - `-c` takes as an option the path to the OpenSSL configuration file to use for the Certificate Authority. The default path is `./config/openssl-ca.conf`.
+  - **-c** - takes as an option the name of the resulting CA file. For example, `-c foo` will produce the `foo.key`, the `foo.pem` and the `foo.srl` files. Its default value is `my-ca-certificate`.
+  - **-p** - takes as an option the name of the private key created as a result of the CSR associated with the registration code. Its default value is `private-key-registration`.
+  - **-c** - takes as an option the path to the OpenSSL configuration file to use for the Certificate Authority. The default path is `./config/openssl-ca.conf`.
 
 Once you run the script, it will generate all the keys required to produce and register the new CA. The script will prompt you whether you want to register the CA right away on AWS IoT after its creation.
 
@@ -138,10 +138,10 @@ The configuration file associated with the creation of the CA is located by defa
 
 The `create-device-certificate.sh` script does not take mandatory arguments, but you can specify optional one:
 
-  - `-c` takes as an option the name of the Certificate Authority used to sign the device certificate. Its default value is `my-ca-certificate`.
-  - `-n` takes as an option the name of the resulting device certificate. Its default value is `my-device-cerificate`.
-  - `-r` takes as an option the path of the reulting AWS Root certificate that will automatically be downloaded. Its default value is `aws-root-cert.pem`.
-  - `-c` takes as an option the path to the OpenSSL configuration file to use for the device certificate. The default path is `./config/openssl-device.conf`.
+  - **-c** - takes as an option the name of the Certificate Authority used to sign the device certificate. Its default value is `my-ca-certificate`.
+  - **-n** - takes as an option the name of the resulting device certificate. Its default value is `my-device-cerificate`.
+  - **-r** - takes as an option the path of the reulting AWS Root certificate that will automatically be downloaded. Its default value is `aws-root-cert.pem`.
+  - **-c** - takes as an option the path to the OpenSSL configuration file to use for the device certificate. The default path is `./config/openssl-device.conf`.
 
 The script when run will create a new set of device certificates that will be ready to use to connect to AWS IoT. The script will automatically download the AWS Root certificate to allow you to test the connection right away.
 
