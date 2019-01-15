@@ -36,10 +36,10 @@ Lead Maintainer: [Halim Qarroum](mailto:hqm.post@gmail.com)
 
 The universal [Just In Time Registration (JITR)](https://aws.amazon.com/fr/blogs/iot/just-in-time-registration-of-device-certificates-on-aws-iot/) process made available in this repository is a reference implementation of the JITR for the AWS platform that supports auto-registration of IoT devices connecting themselves directly to the cloud with certficates on AWS IoT and of Greengrass gateways.
 
-The JITR requires usage and registration of a Certificate Authority (CA) maintained by the owner or manufacturer of devices which allows them to issue certificates for devices without involving the AWS IoT service (an example would be mass provisionning of devices within a factory before shipping). The AWS IoT service is then able to invoke a lambda function each time a non-registered certificate associated with the registered CA connects to the AWS IoT platform.
+The JITR process requires usage and registration of a [Root Certificate of Authority (Root CA)](https://en.wikipedia.org/wiki/Root_certificate) maintained by the owner or manufacturer of devices which allows them to issue certificates for devices without involving the AWS IoT service (an example would be mass provisionning of devices within a factory before shipping). The AWS IoT service is then able to invoke a lambda function each time a non-registered certificate associated with the registered CA connects to the AWS IoT platform.
 
-This implementation allows device owners to provision devices by embedding specific attributes in their certificates. Since certificates are signed with the CA, and the CA is registered on AWS IoT, they are considered authentic and non-repudiable.
-The universal JITR lambda function does the following when a new device connects to the platform :
+This implementation allows device owners to provision devices by embedding specific attributes in their certificates. Since certificates are signed with your Root CA, and it is registered on AWS IoT, embedded fields are considered authentic and non-repudiable.
+The universal JITR lambda function takes the following actions when a new device connects to the platform :
 
  - It validates the certificate fields (see the [Certificate fields](#certificate-fields) section for more information on required fields. If the fields are incorrect, the registration process is aborted.
  - It optionally asynchronoysly calls an external implementer-provided Lambda function which can be served as a callback to define whether to continue the registration process or not. This can come in handy when implementers maintain a Certificate Revocation List (CRL) for instance, but can be used for any purpose really.
@@ -161,4 +161,6 @@ Note that if you did not register the device certificate with AWS IoT manually, 
 
 If you have registered multiple account credentilas into your AWS CLI's configuration, you can select on which account you'd want to deploy the CA by specifying an inline environment value :
 
-`AWS_PROFILE=my-profile ./create-and-register-ca.sh`
+```bash
+AWS_PROFILE=my-profile ./create-and-register-ca.sh
+```
