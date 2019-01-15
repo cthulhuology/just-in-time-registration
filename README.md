@@ -53,11 +53,12 @@ The universal JITR lambda function takes the following actions when a new device
 
  ## Certificate fields
  
- You can embed any standard field into your X.509 certificates, but to enforce consistency across a fleet, this implementation requires you to provide the following three fields in the device certificate :
+ You can embed any standard field into your X.509 certificates, but to enforce consistency and create appropriate semantics across a fleet, this implementation requires you to provide the following fields in the device certificate :
  
   - **commonName** - Identifies the device common name on the platform.
   - **serialNumber** - Allows to uniquely address your device on the platform (used in our AWS IoT policy to enforce the device permissions on the platform.
   - **title** - Identifies the type of the device, supported values are `greengrass` or `iot` to identify a non-Greengrass device. This field will be used to determine whether the invoked Lambda function should create a Greengrass Core in addition to the thing in the AWS IoT device registry.
+  - **
  
 > These three required attributes will be associated to the created `Thing` in the AWS IoT device registry as searchable attributes. This will allow you to easily query the registry for these attributes across your entire fleet.
 
@@ -102,15 +103,18 @@ As of this version, the only variable accessible through the template is the `ce
       "transferData": "An associative object holding information relative to transfert data."
     },
     "awsAccountId": "The ID of the AWS account at the origin of the JITR message.",
-    "attributes": "Attributes associated with the certificate's subject field."
+    "attributes": {
+      "subject": "Attributes associated with the certificate's subject field.",
+      "issuer": "Attributes associated with the certificate's issuer field."
+    }
   }
 }
 ```
 
-As such, if the certificate contains the serial number of the device and you want it to be part of its name, you can write the following in the `ThingName` parameter of the template :
+As such, if the certificate's subject fields contains the serial number of the device and you want it to be part of its thing name, you can write the following in the `ThingName` parameter of the template :
 
 ```js
-thing-<%= certificate.attributes.serialNumber %>
+thing-<%= certificate.attributes.subject.serialNumber %>
 ```
 
 ## Command-line tools
