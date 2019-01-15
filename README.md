@@ -28,7 +28,7 @@ Lead Maintainer: [Halim Qarroum](mailto:hqm.post@gmail.com)
 ## Features
 
  - Universal Just-in-Time Registration implementation for Greengrass devices and IoT devices.
- - Allows synamic parameterization of your thing attributes given certificate fields.
+ - Allows dynamic parameterization of your thing related attributes given certificate fields.
  - Provides the tooling to create your custom Root CA and device certificates in an automated fashion.
  - Allows injection of implementer-provided Lambda function to validate the registration.
 
@@ -117,8 +117,8 @@ thing-<%= certificate.attributes.serialNumber %>
 
 This project features two scripts in the `bin` directory :
 
-  - `create-and-register-ca.sh` starts the process of creating a Certificate Authority and will, if you accept it, register the newly created certificate on AWS IoT, activate it, and enable its auto registration status.
-  - `create-device-certificate.sh` uses a previously created Certificate Authority to sign a new device certificate which is ready to be provisionned on a device.
+  - [`create-and-register-ca.sh`](bin/create-and-register-ca.sh) starts the process of creating a Certificate Authority and will, if you accept it, register the newly created certificate on AWS IoT, activate it, and enable its auto registration status.
+  - [`create-device-certificate.sh`](bin/create-device-certificate.sh) uses a previously created Certificate Authority to sign a new device certificate which is ready to be provisionned on a device.
 
 In order to be able to execute the above scripts, make sure that they are executable. On a Unix system, you can run `chmod +x <your_script>` in order to do so.
 
