@@ -26,12 +26,10 @@ Lead Maintainer: [Halim Qarroum](mailto:hqm.post@gmail.com)
  
 ## Features
 
- - Package and dependency management for Greengrass applications.
- - Automated deployment of Edge ecosystems on Greengrass Cores.
- - Provisionning of AWS Greengrass on your physical and virtual instances.
- - Introduces [Deployment Templates](https://github.com/HQarroum/green-cli/wiki#deployment-templates) as the Edge Infrastructure as Code language for AWS Greengrass.
- - Live logging of running Lambda functions in the terminal.
- - Remote management of Greegrass fleets.
+ - Universal Just-in-Time Registration implementation for Greengrass devices and IoT devices.
+ - Allows synamic parameterization of your thing attributes given certificate fields.
+ - Provides the tooling to create your custom Root CA and device certificates in an automated fashion.
+ - Allows injection of implementer-provided Lambda function to validate the registration.
 
 ## Description
 
@@ -88,21 +86,21 @@ As of this version, the only variable accessible through the template is the `ce
 
 ```json
 {
-  certificate: {
-    certificateDescription: {
-      certificateId: 'The identifier of the certificate.',
-      certificateArn: 'The Arn of the certificate.',
-      caCertificateId: 'The certificate ID of the CA certificate used to sign this certificate.',
-      status: 'The status of the certificate.',
-      certificatePem: 'The certificate data, in PEM format.',
-      ownedBy: 'The ID of the AWS account that owns the certificate.',
-      previousOwnedBy: 'The ID of the AWS account of the previous owner of the certificate.',
-      creationDate: 'The date and time the certificate was created.',
-      lastModifiedDate: 'The date and time the certificate was last modified.',
-      transferData: 'An associative object holding information relative to transfert data.'
+  "certificate": {
+    "certificateDescription": {
+      "certificateId": "The identifier of the certificate.",
+      "certificateArn": "The Arn of the certificate.",
+      "caCertificateId": "The certificate ID of the CA certificate used to sign this certificate.",
+      "status": "The status of the certificate.",
+      "certificatePem": "The certificate data, in PEM format.",
+      "ownedBy": "The ID of the AWS account that owns the certificate.",
+      "previousOwnedBy": "The ID of the AWS account of the previous owner of the certificate.",
+      "creationDate": "The date and time the certificate was created.",
+      "lastModifiedDate": "The date and time the certificate was last modified.",
+      "transferData": "An associative object holding information relative to transfert data."
     },
-    awsAccountId: 'The ID of the AWS account at the origin of the JITR message.',
-    attributes: 'Attributes associated with the certificate's subject field.'
+    "awsAccountId": "The ID of the AWS account at the origin of the JITR message.",
+    "attributes": "Attributes associated with the certificate's subject field."
   }
 }
 ```
