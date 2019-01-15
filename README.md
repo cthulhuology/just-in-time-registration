@@ -58,7 +58,7 @@ The universal JITR lambda function takes the following actions when a new device
   - **title** - Identifies the type of the device, supported values are `greengrass` to identify Greengrass devices or `iot` to identify a non-Greengrass device. This field will be used to determine whether the invoked Lambda function should create a Greengrass Core in addition to the thing in the AWS IoT device registry.
   - **generationQualifier** - The product identifier associated with the created thing. This will associate the created thing with a `product-id` attribute having this field as value.
  
-> These required attributes will be associated to the created `Thing` in the AWS IoT device registry as searchable attributes. All the other certificate attributes contained in the certificate will be associated with non-searchable attributes on the created `Thing` object.
+> These required attributes will be associated to the created `Thing` in the AWS IoT device registry as searchable attributes. All the other certificate attributes contained in the certificate will be associated with non-searchable attributes on the created `Thing` object. Note that you can embed up to **50** attributes in your certificate.
 
  ## Pre-requisites
 
