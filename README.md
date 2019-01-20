@@ -133,7 +133,7 @@ While deploying the template, you can enable the **LogEventsToDynamo** parameter
 
 <br /><br />
 <p align="center">
-  <img  src="docs/dynamo-db.png" />
+  <img src="assets/dynamo-db.png" />
 </p>
 
 If you want to further integrate these events with your data lake, you can create a DynamoDB stream associated with this table which will redirect them to an S3 bucket.
@@ -144,7 +144,7 @@ We also offer the ability to push the created provisioning events to an SQS queu
 
 <br /><br />
 <p align="center">
-  <img  src="docs/sqs.png" />
+  <img wisth="200" src="assets/sqs.png" />
 </p>
 
 This can allow you to handle the messages as discrete transactions and integrate them with your internal messaging system to perform additional actions (e.g integrate the SQS queue with SNS and have a message sent to an HTTPS endpoint, etc.).
