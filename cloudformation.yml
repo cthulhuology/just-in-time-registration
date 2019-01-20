@@ -1,0 +1,236 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Creates the appropriate resources in the your AWS account in order to
+             implement Just-In-Time-Registration for your IoT devices and AWS Greengrass nodes.
+
+# Metadata associated with this stack.
+Metadata:
+
+  # Cloudformation interface for parameters.
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+
+      # General parameters label.
+      - Label:
+          default: General Parameters
+        Parameters:
+          - PolicyName
+          - ThingName
+          - ThingTypeName
+          - GreengrassGroupName
+          - InterceptorLambda
+      
+      # Logging parameters label.
+      - Label:
+          default: Logging parameters
+        Parameters:
+          - LogEventsToDynamo
+          - LogEventsToSqs
+
+
+# Parameters exposed by this template.
+Parameters:
+  PolicyName:
+    Type: String
+    Description: "Defines the name of the IoT policy which is going to be associated with the created thing(s). If the policy already exists, the device will be attached to it, otherwise a new policy will be automatically created."
+    Default: "generic-access-policy"
+  ThingName:
+    Type: String
+    Description: "Defines the name of the thing which is going to be associated with the device. If the thing does not exist, a new thing will be created. This field is compatible with template parameterization in order to customize the name of the policy, please read the documentation associated with the template for more information."
+    Default: "thing-<%= certificate.attributes.subject.serialNumber %>"
+  ThingTypeName:
+    Type: String
+    Description: "The name of the thing type you want to associate your things with. If a thing type associated with your parameterized template does not exist, it will be automatically created. This field is compatible with template parameterization in order to customize the name of the thing type, please read the documentation associated with the template for more information."
+    Default: "<%= certificate.attributes.subject['2.5.4.44'] %>-device"
+  GreengrassGroupName:
+    Type: String
+    Description: "The name of the Greengrass Group provisioned for Greengrass enabled devices. This field is compatible with template parameterization in order to customize the name of the group, please read the documentation associated with the template for more information."
+    Default: "<%= certificate.attributes.subject.serialNumber %>-group"
+  InterceptorLambda:
+    Type: String
+    Description: "(Optional) - The ARN associated with an interceptor lambda function. This function can be plugged into the JITR template to enable clients to add custom logic to accept or refuse a device registration."
+    Default: ""
+  LogEventsToDynamo:
+    Type: String
+    Description: "(Optional) - Whether to deploy a DynamoDB table which will keep records of the provisioning events having occured on the platform."
+    Default: false
+    AllowedValues:
+      - true
+      - false
+  LogEventsToSqs:
+    Type: String
+    Description: "(Optional) - Whether to deploy an SQS Queue to which you would like provisionning events to be sent to."
+    Default: false
+    AllowedValues:
+      - true
+      - false
+
+
+# Conditions declared in this template.
+Conditions:
+  LogToDynamoDb: !Equals [!Ref LogEventsToDynamo, true]
+  LogToSqs: !Equals [!Ref LogEventsToSqs, true]
+
+
+# Description of the resources to be created.
+Resources:
+
+  # A DynamoDB Table that keeps a record of the
+  # provisioning events having occured on the
+  # platform.
+  ProvisioningTable:
+    Type: AWS::DynamoDB::Table
+    Condition: LogToDynamoDb
+    Properties:
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: certificateId
+          AttributeType: S
+        - AttributeName: timestamp
+          AttributeType: N
+      KeySchema:
+        - AttributeName: certificateId
+          KeyType: HASH
+        - AttributeName: timestamp
+          KeyType: RANGE
+
+  # An SQS queue to which the provisioning
+  # events will be sent to.
+  ProvisioningQueue:
+    Condition: LogToSqs
+    Type: AWS::SQS::Queue
+
+  # The role associated with the Lambda in charge of
+  # the device registration. This role also defines
+  # an inline policy allowing the Lambda to execute
+  # actions on the account.
+  RegistrationRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+        - arn:aws:iam::aws:policy/AWSXrayWriteOnlyAccess
+      Path: /
+      Policies:
+        - PolicyName: !Sub registration-policy-${AWS::StackName}
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - iot:UpdateCertificate
+                  - iot:CreatePolicy
+                  - iot:AttachPrincipalPolicy
+                  - iot:AttachThingPrincipal
+                  - iot:CreateThing
+                  - iot:CreateThingType
+                  - iot:DescribeCertificate
+                  - iot:DescribeCaCertificate
+                  - iot:DescribeThing
+                  - iot:DescribeThingType
+                  - iot:GetPolicy
+                  - greengrass:*
+                Resource: "*"
+              - Effect: Allow
+                Action:
+                  - iam:CreateRole
+                  - iam:AttachRolePolicy
+                  - iam:PassRole
+                Resource: "*"
+              - !If
+                - LogToDynamoDb
+                - Effect: Allow
+                  Action: dynamodb:PutItem
+                  Resource: !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${ProvisioningTable}"
+                - !Ref AWS::NoValue
+              - !If
+                - LogToSqs
+                - Effect: Allow
+                  Action: sqs:SendMessage
+                  Resource: !Sub "arn:aws:sqs:${AWS::Region}:${AWS::AccountId}:${ProvisioningQueue.QueueName}"
+                - !Ref AWS::NoValue
+
+  # Registration Lambda function which takes care
+  # of registering the devices in AWS IoT.
+  RegistrationLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: jitr-registration-lambda
+      Description: "Registers and activates the newly connected devices in AWS IoT, and assigns them a standard policy."
+      Handler: index.handler
+      Role: !GetAtt RegistrationRole.Arn
+      Code: ./registration-lambda
+      Runtime: nodejs8.10
+      Timeout: 30
+      Environment:
+        Variables:
+          PolicyName: !Ref PolicyName
+          ThingName: !Ref ThingName
+          ThingTypeName: !Ref ThingTypeName
+          GreengrassGroupName: !Ref GreengrassGroupName
+          InterceptorLambda: !Ref InterceptorLambda
+          GreengrassServiceRole: !GetAtt GreengrassServiceAccountRole.Arn
+          LoggingTable: !If [LogToDynamoDb, !Ref ProvisioningTable, !Ref "AWS::NoValue"]
+          SqsQueue: !If [LogToSqs, !Ref ProvisioningQueue, !Ref "AWS::NoValue"]
+
+  # Permission allowing the AWS IoT service to
+  # invoke the registration Lambda function.
+  RegistrationLambdaPermission: 
+    Type: AWS::Lambda::Permission
+    Properties: 
+      FunctionName: !GetAtt RegistrationLambda.Arn
+      Action: lambda:InvokeFunction
+      Principal: iot.amazonaws.com
+
+  # AWS IoT rule intercepting certificates registration
+  # event, and forwards them to the registration Lambda
+  # function.
+  RegistrationTopicRule:
+    Type: AWS::IoT::TopicRule
+    Properties: 
+      RuleName: jitr_registration_rule
+      TopicRulePayload: 
+        RuleDisabled: false
+        Sql: >-
+          SELECT * FROM '$aws/events/certificates/registered/+'
+        Actions: 
+          - Lambda: 
+              FunctionArn: !GetAtt RegistrationLambda.Arn
+  
+  # The Greengrass Service Role to create, and which will
+  # be associated with the created Greengrass Groups.
+  GreengrassServiceAccountRole:
+    Type: AWS::IAM::Role
+    Properties:
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSGreengrassResourceAccessRolePolicy
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - greengrass.amazonaws.com
+            Action:
+              - sts:AssumeRole
+
+# The outputs to be generated by this template.
+Outputs:
+  RegistrationRole:
+    Value: !GetAtt RegistrationRole.Arn
+  RegistrationLambda:
+    Value: !GetAtt RegistrationLambda.Arn
+  GreengrassServiceAccountRoleArn:
+    Value: !GetAtt GreengrassServiceAccountRole.Arn
+  DynamoDbTableArn:
+    Value: !If [LogToDynamoDb, !GetAtt ProvisioningTable.Arn, ""]
+  ProvisioningQueueUrl:
+    Value: !If [LogToSqs, !Ref ProvisioningQueue, ""]
