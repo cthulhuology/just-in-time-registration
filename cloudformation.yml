@@ -18,7 +18,7 @@ Metadata:
           - ThingTypeName
           - GreengrassGroupName
           - InterceptorLambda
-      
+
       # Logging parameters label.
       - Label:
           default: Logging parameters
@@ -183,9 +183,9 @@ Resources:
 
   # Permission allowing the AWS IoT service to
   # invoke the registration Lambda function.
-  RegistrationLambdaPermission: 
+  RegistrationLambdaPermission:
     Type: AWS::Lambda::Permission
-    Properties: 
+    Properties:
       FunctionName: !GetAtt RegistrationLambda.Arn
       Action: lambda:InvokeFunction
       Principal: iot.amazonaws.com
@@ -195,16 +195,16 @@ Resources:
   # function.
   RegistrationTopicRule:
     Type: AWS::IoT::TopicRule
-    Properties: 
+    Properties:
       RuleName: jitr_registration_rule
-      TopicRulePayload: 
+      TopicRulePayload:
         RuleDisabled: false
         Sql: >-
           SELECT * FROM '$aws/events/certificates/registered/+'
-        Actions: 
-          - Lambda: 
+        Actions:
+          - Lambda:
               FunctionArn: !GetAtt RegistrationLambda.Arn
-  
+
   # The Greengrass Service Role to create, and which will
   # be associated with the created Greengrass Groups.
   GreengrassServiceAccountRole:
