@@ -75,6 +75,8 @@ To deploy this template on your account, simply click on the *Launch Stack* quic
 
 [![Launch Stack](https://s3.amazonaws.com/cloudformation-examples/cloudformation-launch-stack.png)](https://console.aws.amazon.com/cloudformation/home?region=us-east-1#/stacks/new?stackName=aws-iot-just-in-time-registration&templateURL=https://github.com/HQarroum/just-in-time-registration/blob/master/cloudformation/cloudformation.yml)
 
+### Parameterization
+
 For the sake of genericity, the template provides you with the ability to inject parameters before deploying the stack in the *Parameters* step of the CloudFormation deployment wizard.
 
 The **PolicyName**, **ThingName**, **GreengrassGroupName** and the **ThingTypeName** parameters of the stack can be *parameterized* using variables at run-time dynamically. To insert parameters in the parameter, you must keep the variables between the following enclosure : `<%= my-variable %>`.
@@ -120,6 +122,32 @@ As of this version, the only variable accessible through the template is the `ce
   }
 }
 ```
+
+### AWS services integration
+
+In addition to automatically provisioning your device registry, this implementation allows you to optionally integrate with third-party AWS services such as DynamoDB and SQS in order to log each provisioning action, or to allow to you to further integrate it within your existing infrastructure. We will log success events and their associated properties, as well as failure events with the produced error to allow you to pinpoint issues while provisioning devices.
+
+#### DynamoDB
+
+While deploying the template, you can enable the **LogEventsToDynamo** parameter which will create a new DynamoDB on-demand table (in order to best respond to spike provisioning events without requiring that you provision reads and writes ahead of time) and have all the events being logged into this table.
+
+<br /><br />
+<p align="center">
+  <img  src="docs/dynamo-db.png" />
+</p>
+
+If you want to further integrate these events with your data lake, you can create a DynamoDB stream associated with this table which will redirect them to an S3 bucket.
+
+#### SQS
+
+We also offer the ability to push the created provisioning events to an SQS queue which you can enable by toggling the **LogEventsToSqs** parameter of the Cloudformation template.
+
+<br /><br />
+<p align="center">
+  <img  src="docs/sqs.png" />
+</p>
+
+This can allow you to handle the messages as discrete transactions and integrate them with your internal messaging system to perform additional actions (e.g integrate the SQS queue with SNS and have a message sent to an HTTPS endpoint, etc.).
 
 ## Command-line tools
 
