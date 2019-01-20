@@ -63,7 +63,3 @@ echo "[+] Enabling the auto-registration-status of the CA on AWS IoT ..."
 aws iot update-ca-certificate --certificate-id $CERTIFICATE_ID --new-auto-registration-status ENABLE
 echo "[+] Successfully enabled the auto-registration-status of the Certificate Authority"
 echo "[+] You can see your newly registered CA in your console at: https://console.aws.amazon.com/iotv2/home#/cacertificatehub"
-
-
-
-
