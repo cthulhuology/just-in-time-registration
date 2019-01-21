@@ -197,6 +197,45 @@ const getSubjectField = (certificate) => {
 };
 
 /**
+ * Invokes the given interceptor lambda if it
+ * is defined and interrupts the provisionning
+ * process if the lambda function rejects
+ * process.
+ * @param {*} name the name of the interceptor
+ * lambda function to invoke.
+ * @param {*} certificate the certificate object
+ * to forward to the interceptor lambda.
+ */
+const invokeInterceptor = (name, certificate) => {
+  const getMessage = (data) => {
+    const payload = data.Payload || 'Unspecified interceptor error';
+    try {
+      // Trying to parse the result as JSON.
+      return (JSON.parse(payload));
+    } catch (e) {
+      // If it failed, we simply return the initial payload.
+      return (payload);
+    }
+  }
+  if (_.isEmpty(name)) {
+    // If no interceptor is defined, we resolve.
+    return (Promise.resolve());
+  }
+  return new Promise((resolve, reject) => {
+    new AWS.Lambda().invoke({
+      FunctionName: name,
+      Payload: JSON.stringify(certificate)
+    }, (err, data) => {
+      if (err) {
+        // If an error occured, we reject the execution.
+        return (reject(err));
+      }
+      return (data.FunctionError ? reject(getMessage(data)) : resolve());
+    });
+  });
+};
+
+/**
  * Lambda function entry point.
  */
 exports.handler = (event, context, callback) => {
@@ -227,8 +266,10 @@ exports.handler = (event, context, callback) => {
       return (Promise.reject(error));
     }
     // Creating a new device policy.
-    return (createPolicy(certificate));
+    return (invokeInterceptor(process.env.InterceptorLambda));
   })
+  // Creating the IoT policy associated with the device.
+  .then(() => createPolicy(certificate))
   // Attaching the certificate to the created policy.
   .then((policy) => attachPrincipalPolicy(certificate, policy))
   // Creating the thing type associated with the device.

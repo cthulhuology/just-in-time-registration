@@ -62,7 +62,7 @@ Parameters:
     Default: "<%= certificate.attributes.subject.serialNumber %>-group"
   InterceptorLambda:
     Type: String
-    Description: "(Optional) - The ARN associated with an interceptor lambda function. This function can be plugged into the JITR template to enable clients to add custom logic to accept or refuse a device registration."
+    Description: "(Optional) - The name of an interceptor lambda function which can be plugged into the JITR template to enable clients to add custom logic to accept or refuse a device registration (e.g implementing a Certificate Revocation List system)."
     Default: ""
   DevicePolicyName:
     Type: String
@@ -124,6 +124,7 @@ Parameters:
 Conditions:
   LogToDynamoDb: !Equals [!Ref LogEventsToDynamo, true]
   LogToSqs: !Equals [!Ref LogEventsToSqs, true]
+  InterceptorDefined: !Not [!Equals [!Ref InterceptorLambda, ""]]
 
 
 # Description of the resources to be created.
@@ -212,6 +213,13 @@ Resources:
                   Action: sqs:SendMessage
                   Resource: !Sub "arn:aws:sqs:${AWS::Region}:${AWS::AccountId}:${ProvisioningQueue.QueueName}"
                 - !Ref AWS::NoValue
+              - !If
+                - InterceptorDefined
+                - Effect: Allow
+                  Action: lambda:InvokeFunction
+                  Resource: !Sub "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${InterceptorLambda}"
+                - !Ref AWS::NoValue
+              
 
   # Registration Lambda function which takes care
   # of registering the devices in AWS IoT.
