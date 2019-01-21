@@ -13,11 +13,30 @@ Metadata:
       - Label:
           default: General Parameters
         Parameters:
-          - PolicyName
           - ThingName
           - ThingTypeName
           - GreengrassGroupName
           - InterceptorLambda
+
+      # IoT device policies label.
+      - Label:
+          default: IoT Devices Policies
+        Parameters:
+          - DevicePolicyName
+          - DeviceConnectPolicy
+          - DeviceReceivePolicy
+          - DeviceSubscribePolicy
+          - DevicePublishPolicy
+
+      # Greengrass device policies label.
+      - Label:
+          default: Greengrass Devices Policies
+        Parameters:
+          - GreengrassPolicyName
+          - GreengrassConnectPolicy
+          - GreengrassReceivePolicy
+          - GreengrassSubscribePolicy
+          - GreengrassPublishPolicy
 
       # Logging parameters label.
       - Label:
@@ -29,10 +48,6 @@ Metadata:
 
 # Parameters exposed by this template.
 Parameters:
-  PolicyName:
-    Type: String
-    Description: "Defines the name of the IoT policy which is going to be associated with the created thing(s). If the policy already exists, the device will be attached to it, otherwise a new policy will be automatically created."
-    Default: "generic-access-policy"
   ThingName:
     Type: String
     Description: "Defines the name of the thing which is going to be associated with the device. If the thing does not exist, a new thing will be created. This field is compatible with template parameterization in order to customize the name of the policy, please read the documentation associated with the template for more information."
@@ -49,6 +64,46 @@ Parameters:
     Type: String
     Description: "(Optional) - The ARN associated with an interceptor lambda function. This function can be plugged into the JITR template to enable clients to add custom logic to accept or refuse a device registration."
     Default: ""
+  DevicePolicyName:
+    Type: String
+    Description: "Defines the name of the IoT policy which is going to be associated with the created IoT device(s). If the policy already exists, the device will be attached to it, otherwise a new policy will be automatically created. This field is compatible with template parameterization in order to customize the name of the policy, please read the documentation associated with the template for more information."
+    Default: "iot-access-policy"
+  DeviceConnectPolicy:
+    Type: String
+    Description: "A list of comma-separated `iot:Connect` client identifiers for IoT devices to allow."
+    Default: "${iot:Certificate.Subject.SerialNumber}"
+  DeviceReceivePolicy:
+    Type: String
+    Description: "A list of comma-separated `iot:Receive` resources for IoT devices to allow."
+    Default: "device/${iot:Certificate.Subject.SerialNumber},device/${iot:Certificate.Subject.SerialNumber}/*"
+  DeviceSubscribePolicy:
+    Type: String
+    Description: "A list of comma-separated `iot:Subscribe` resources for IoT devices to allow."
+    Default: "device/${iot:Certificate.Subject.SerialNumber},device/${iot:Certificate.Subject.SerialNumber}/*"
+  DevicePublishPolicy:
+    Type: String
+    Description: "A list of comma-separated `iot:Publish` resources for IoT devices to allow."
+    Default: "device/${iot:Certificate.Subject.SerialNumber},device/${iot:Certificate.Subject.SerialNumber}/*"
+  GreengrassPolicyName:
+    Type: String
+    Description: "Defines the name of the IoT policy which is going to be associated with the created Greengrass device(s). If the policy already exists, the device will be attached to it, otherwise a new policy will be automatically created. This field is compatible with template parameterization in order to customize the name of the policy, please read the documentation associated with the template for more information."
+    Default: "greengrass-access-policy"
+  GreengrassConnectPolicy:
+    Type: String
+    Description: "A list of comma-separated `iot:Connect` client identifiers for Greengrass devices to allow."
+    Default: "*"
+  GreengrassReceivePolicy:
+    Type: String
+    Description: "A list of comma-separated `iot:Receive` resources for Greengrass devices to allow."
+    Default: "device/${iot:Certificate.Subject.SerialNumber},device/${iot:Certificate.Subject.SerialNumber}/*"
+  GreengrassSubscribePolicy:
+    Type: String
+    Description: "A list of comma-separated `iot:Subscribe` resources for Greengrass devices to allow."
+    Default: "device/${iot:Certificate.Subject.SerialNumber},device/${iot:Certificate.Subject.SerialNumber}/*"
+  GreengrassPublishPolicy:
+    Type: String
+    Description: "A list of comma-separated `iot:Publish` resources for Greengrass devices to allow."
+    Default: "device/${iot:Certificate.Subject.SerialNumber},device/${iot:Certificate.Subject.SerialNumber}/*"
   LogEventsToDynamo:
     Type: String
     Description: "(Optional) - Whether to deploy a DynamoDB table which will keep records of the provisioning events having occured on the platform."
@@ -172,7 +227,7 @@ Resources:
       Timeout: 30
       Environment:
         Variables:
-          PolicyName: !Ref PolicyName
+          AccountId: !Ref AWS::AccountId
           ThingName: !Ref ThingName
           ThingTypeName: !Ref ThingTypeName
           GreengrassGroupName: !Ref GreengrassGroupName
@@ -180,6 +235,16 @@ Resources:
           GreengrassServiceRole: !GetAtt GreengrassServiceAccountRole.Arn
           LoggingTable: !If [LogToDynamoDb, !Ref ProvisioningTable, !Ref "AWS::NoValue"]
           SqsQueue: !If [LogToSqs, !Ref ProvisioningQueue, !Ref "AWS::NoValue"]
+          DevicePolicyName: !Ref DevicePolicyName
+          DeviceConnectPolicy: !Ref DeviceConnectPolicy
+          DeviceReceivePolicy: !Ref DeviceReceivePolicy
+          DeviceSubscribePolicy: !Ref DeviceSubscribePolicy
+          DevicePublishPolicy: !Ref DevicePublishPolicy
+          GreengrassPolicyName: !Ref GreengrassPolicyName
+          GreengrassConnectPolicy: !Ref GreengrassConnectPolicy
+          GreengrassReceivePolicy: !Ref GreengrassReceivePolicy
+          GreengrassSubscribePolicy: !Ref GreengrassSubscribePolicy
+          GreengrassPublishPolicy: !Ref GreengrassPublishPolicy
 
   # Permission allowing the AWS IoT service to
   # invoke the registration Lambda function.

@@ -2,7 +2,7 @@ const _      = require('lodash');
 const Joi    = require('joi');
 const AWS    = require('aws-sdk');
 const ASN    = require('jsrsasign');
-const policy = require('./lib/generic-access-policy');
+const policy = require('./lib/policies/policy-generator');
 const attrs  = require('./lib/x509-mapping');
 const green  = require('./lib/greengrass/greengrass-provisioner');
 const logger = require('./lib/logger');
@@ -109,8 +109,11 @@ const createThing = (certificate) => {
  * @param {*} subject the certificate subject field.
  */
 const createPolicy = (certificate) => {
+  // Evaluating the policy name given the device type.
+  const policyName = certificate.attributes.subject.T === 'greengrass' ?
+    process.env.GreengrassPolicyName : process.env.DevicePolicyName;
   // The evaluated policy name.
-  const name = _.template(process.env.PolicyName)({ certificate });
+  const name = _.template(policyName)({ certificate });
   // The device policy template.
   const devicePolicy = policy(certificate);
   // Creating the policy on AWS IoT.
@@ -226,28 +229,28 @@ exports.handler = (event, context, callback) => {
     // Creating a new device policy.
     return (createPolicy(certificate));
   })
-    // Attaching the certificate to the created policy.
-    .then((policy) => attachPrincipalPolicy(certificate, policy))
-    // Creating the thing type associated with the device.
-    .then(() => createThingType(certificate))
-    // Creating the thing associated with the device.
-    .then(() => createThing(certificate))
-    // Saving the created thing description.
-    .then((description) => thing = description)
-    // Attaching the certificate to the created thing.
-    .then(() => attachThingPrincipal(certificate, thing.thingName))
-    // Transitions the certificate into the activated state.
-    .then(() => activateCertificate(certificate))
-    // Provisions a new Greengrass Core if the devide type matches.
-    .then(() => green.provision(thing, certificate))
-    // Logging the event to the activated output providers.
-    .then(() => logger.log(thing, event.certificateId, certificate, logger.SUCCESS))
-    // Returning a response to the caller.
-    .then((data) => callback(null, data))
-    // Gracefully logging errors.
-    .catch((err) => {
-      // Redirecting the error to the logger.
-      logger.log(thing, event.certificateId, certificate, logger.FAILURE, err)
-        .then(() => callback(err));
-    });
+  // Attaching the certificate to the created policy.
+  .then((policy) => attachPrincipalPolicy(certificate, policy))
+  // Creating the thing type associated with the device.
+  .then(() => createThingType(certificate))
+  // Creating the thing associated with the device.
+  .then(() => createThing(certificate))
+  // Saving the created thing description.
+  .then((description) => thing = description)
+  // Attaching the certificate to the created thing.
+  .then(() => attachThingPrincipal(certificate, thing.thingName))
+  // Transitions the certificate into the activated state.
+  .then(() => activateCertificate(certificate))
+  // Provisions a new Greengrass Core if the devide type matches.
+  .then(() => green.provision(thing, certificate))
+  // Logging the event to the activated output providers.
+  .then(() => logger.log(thing, event.certificateId, certificate, logger.SUCCESS))
+  // Returning a response to the caller.
+  .then((data) => callback(null, data))
+  // Gracefully logging errors.
+  .catch((err) => {
+    // Redirecting the error to the logger.
+    logger.log(thing, event.certificateId, certificate, logger.FAILURE, err)
+      .then(() => callback(err));
+  });
 };
