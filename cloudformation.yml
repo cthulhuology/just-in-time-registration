@@ -23,7 +23,6 @@ Metadata:
           default: IoT Devices Policies
         Parameters:
           - DevicePolicyName
-          - DeviceConnectPolicy
           - DeviceReceivePolicy
           - DeviceSubscribePolicy
           - DevicePublishPolicy
@@ -33,7 +32,6 @@ Metadata:
           default: Greengrass Devices Policies
         Parameters:
           - GreengrassPolicyName
-          - GreengrassConnectPolicy
           - GreengrassReceivePolicy
           - GreengrassSubscribePolicy
           - GreengrassPublishPolicy
@@ -68,42 +66,34 @@ Parameters:
     Type: String
     Description: "Defines the name of the IoT policy which is going to be associated with the created IoT device(s). If the policy already exists, the device will be attached to it, otherwise a new policy will be automatically created. This field is compatible with template parameterization in order to customize the name of the policy, please read the documentation associated with the template for more information."
     Default: "iot-access-policy"
-  DeviceConnectPolicy:
-    Type: String
-    Description: "A list of comma-separated `iot:Connect` client identifiers for IoT devices to allow."
-    Default: "${iot:Certificate.Subject.SerialNumber}"
   DeviceReceivePolicy:
     Type: String
-    Description: "A list of comma-separated `iot:Receive` resources for IoT devices to allow."
-    Default: "device/${iot:Certificate.Subject.SerialNumber},device/${iot:Certificate.Subject.SerialNumber}/*"
+    Description: "A list of comma-separated `iot:Receive` resources that you would like to grant access to IoT devices. You can use AWS IoT variables in the resources that you define (e.g certificate attributes, or thing attributes)."
+    Default: "device/${iot:Connection.Thing.ThingName},device/${iot:Connection.Thing.ThingName}/*"
   DeviceSubscribePolicy:
     Type: String
-    Description: "A list of comma-separated `iot:Subscribe` resources for IoT devices to allow."
-    Default: "device/${iot:Certificate.Subject.SerialNumber},device/${iot:Certificate.Subject.SerialNumber}/*"
+    Description: "A list of comma-separated `iot:Subscribe` resources that you would like to grant access to IoT devices. You can use AWS IoT variables in the resources that you define (e.g certificate attributes, or thing attributes)."
+    Default: "device/${iot:Connection.Thing.ThingName},device/${iot:Connection.Thing.ThingName}/*"
   DevicePublishPolicy:
     Type: String
-    Description: "A list of comma-separated `iot:Publish` resources for IoT devices to allow."
-    Default: "device/${iot:Certificate.Subject.SerialNumber},device/${iot:Certificate.Subject.SerialNumber}/*"
+    Description: "A list of comma-separated `iot:Publish` resources that you would like to grant access to IoT devices. You can use AWS IoT variables in the resources that you define (e.g certificate attributes, or thing attributes)."
+    Default: "device/${iot:Connection.Thing.ThingName},device/${iot:Connection.Thing.ThingName}/*"
   GreengrassPolicyName:
     Type: String
     Description: "Defines the name of the IoT policy which is going to be associated with the created Greengrass device(s). If the policy already exists, the device will be attached to it, otherwise a new policy will be automatically created. This field is compatible with template parameterization in order to customize the name of the policy, please read the documentation associated with the template for more information."
     Default: "greengrass-access-policy"
-  GreengrassConnectPolicy:
-    Type: String
-    Description: "A list of comma-separated `iot:Connect` client identifiers for Greengrass devices to allow."
-    Default: "*"
   GreengrassReceivePolicy:
     Type: String
-    Description: "A list of comma-separated `iot:Receive` resources for Greengrass devices to allow."
-    Default: "device/${iot:Certificate.Subject.SerialNumber},device/${iot:Certificate.Subject.SerialNumber}/*"
+    Description: "A list of comma-separated `iot:Receive` resources that you would like to grant access to Greengrass devices. You can use AWS IoT variables in the resources that you define (e.g certificate attributes, or thing attributes)."
+    Default: "device/${iot:Certificate.Subject.CommonName},device/${iot:Certificate.Subject.CommonName}/*"
   GreengrassSubscribePolicy:
     Type: String
-    Description: "A list of comma-separated `iot:Subscribe` resources for Greengrass devices to allow."
-    Default: "device/${iot:Certificate.Subject.SerialNumber},device/${iot:Certificate.Subject.SerialNumber}/*"
+    Description: "A list of comma-separated `iot:Subscribe` resources that you would like to grant access to Greengrass devices. You can use AWS IoT variables in the resources that you define (e.g certificate attributes, or thing attributes)."
+    Default: "device/${iot:Certificate.Subject.CommonName},device/${iot:Certificate.Subject.CommonName}/*"
   GreengrassPublishPolicy:
     Type: String
-    Description: "A list of comma-separated `iot:Publish` resources for Greengrass devices to allow."
-    Default: "device/${iot:Certificate.Subject.SerialNumber},device/${iot:Certificate.Subject.SerialNumber}/*"
+    Description: "A list of comma-separated `iot:Publish` resources that you would like to grant access to Greengrass devices. You can use AWS IoT variables in the resources that you define (e.g certificate attributes, or thing attributes)."
+    Default: "device/${iot:Certificate.Subject.CommonName},device/${iot:Certificate.Subject.CommonName}/*"
   LogEventsToDynamo:
     Type: String
     Description: "(Optional) - Whether to deploy a DynamoDB table which will keep records of the provisioning events having occured on the platform."
@@ -113,7 +103,7 @@ Parameters:
       - false
   LogEventsToSqs:
     Type: String
-    Description: "(Optional) - Whether to deploy an SQS Queue to which you would like provisionning events to be sent to."
+    Description: "(Optional) - Whether to deploy an SQS Queue to which you would like to enqueue provisionning events for later asynchronous processing."
     Default: false
     AllowedValues:
       - true
@@ -154,6 +144,39 @@ Resources:
   ProvisioningQueue:
     Condition: LogToSqs
     Type: AWS::SQS::Queue
+
+  # An SQS queue to which the certificate registration
+  # events will be sent asynchronous processing.
+  CertificateEventQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      VisibilityTimeout: 120
+      DelaySeconds: 5
+
+  # The role allowing AWS IoT to push certificate
+  # creation events into the SQS Queue.
+  IotQueuingRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - iot.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Path: /
+      Policies:
+        - PolicyName: !Sub iot-queuing-policy-${AWS::StackName}
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - sqs:SendMessage
+                Resource: !GetAtt CertificateEventQueue.Arn
 
   # The role associated with the Lambda in charge of
   # the device registration. This role also defines
@@ -197,6 +220,13 @@ Resources:
                 Resource: "*"
               - Effect: Allow
                 Action:
+                  - sqs:ReceiveMessage
+                  - sqs:DeleteMessage
+                  - sqs:GetQueueAttributes
+                  - sqs:ChangeMessageVisibility
+                Resource: !GetAtt CertificateEventQueue.Arn
+              - Effect: Allow
+                Action:
                   - iam:CreateRole
                   - iam:AttachRolePolicy
                   - iam:PassRole
@@ -205,13 +235,13 @@ Resources:
                 - LogToDynamoDb
                 - Effect: Allow
                   Action: dynamodb:PutItem
-                  Resource: !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${ProvisioningTable}"
+                  Resource: !GetAtt ProvisioningTable.Arn
                 - !Ref AWS::NoValue
               - !If
                 - LogToSqs
                 - Effect: Allow
                   Action: sqs:SendMessage
-                  Resource: !Sub "arn:aws:sqs:${AWS::Region}:${AWS::AccountId}:${ProvisioningQueue.QueueName}"
+                  Resource: !GetAtt ProvisioningQueue.Arn
                 - !Ref AWS::NoValue
               - !If
                 - InterceptorDefined
@@ -230,9 +260,10 @@ Resources:
       Description: "Registers and activates the newly connected devices in AWS IoT, and assigns them a standard policy."
       Handler: index.handler
       Role: !GetAtt RegistrationRole.Arn
-      Code: ./registration-lambda
+      Code: ./lambdas/registration-lambda
       Runtime: nodejs8.10
-      Timeout: 30
+      Timeout: 60
+      ReservedConcurrentExecutions: 1
       Environment:
         Variables:
           AccountId: !Ref AWS::AccountId
@@ -244,24 +275,23 @@ Resources:
           LoggingTable: !If [LogToDynamoDb, !Ref ProvisioningTable, !Ref "AWS::NoValue"]
           SqsQueue: !If [LogToSqs, !Ref ProvisioningQueue, !Ref "AWS::NoValue"]
           DevicePolicyName: !Ref DevicePolicyName
-          DeviceConnectPolicy: !Ref DeviceConnectPolicy
           DeviceReceivePolicy: !Ref DeviceReceivePolicy
           DeviceSubscribePolicy: !Ref DeviceSubscribePolicy
           DevicePublishPolicy: !Ref DevicePublishPolicy
           GreengrassPolicyName: !Ref GreengrassPolicyName
-          GreengrassConnectPolicy: !Ref GreengrassConnectPolicy
           GreengrassReceivePolicy: !Ref GreengrassReceivePolicy
           GreengrassSubscribePolicy: !Ref GreengrassSubscribePolicy
           GreengrassPublishPolicy: !Ref GreengrassPublishPolicy
 
-  # Permission allowing the AWS IoT service to
-  # invoke the registration Lambda function.
-  RegistrationLambdaPermission:
-    Type: AWS::Lambda::Permission
+  # The event source mapping between the certificate event
+  # queue and the registration lambda function.
+  RegistrationLambdaEventSourceMapping:
+    Type: AWS::Lambda::EventSourceMapping
     Properties:
+      BatchSize: 10
+      Enabled: true
+      EventSourceArn: !GetAtt CertificateEventQueue.Arn
       FunctionName: !GetAtt RegistrationLambda.Arn
-      Action: lambda:InvokeFunction
-      Principal: iot.amazonaws.com
 
   # AWS IoT rule intercepting certificates registration
   # event, and forwards them to the registration Lambda
@@ -271,12 +301,17 @@ Resources:
     Properties:
       RuleName: jitr_registration_rule
       TopicRulePayload:
+        Description: >-
+          An AWS IoT rule that forwards certificate registration events to an
+          SQS queue for asynchronous processing by the Just-In-Time Registration Lambda.
         RuleDisabled: false
         Sql: >-
           SELECT * FROM '$aws/events/certificates/registered/+'
         Actions:
-          - Lambda:
-              FunctionArn: !GetAtt RegistrationLambda.Arn
+          - Sqs:
+              QueueUrl: !Ref CertificateEventQueue
+              RoleArn: !GetAtt IotQueuingRole.Arn
+              UseBase64: false
 
   # The Greengrass Service Role to create, and which will
   # be associated with the created Greengrass Groups.
@@ -299,10 +334,14 @@ Resources:
 Outputs:
   RegistrationRole:
     Value: !GetAtt RegistrationRole.Arn
+  IotQueuingRole:
+    Value: !GetAtt IotQueuingRole.Arn
   RegistrationLambda:
     Value: !GetAtt RegistrationLambda.Arn
   GreengrassServiceAccountRoleArn:
     Value: !GetAtt GreengrassServiceAccountRole.Arn
+  CertificateEventQueueUrl:
+    Value: !Ref CertificateEventQueue
   DynamoDbTableArn:
     Value: !If [LogToDynamoDb, !GetAtt ProvisioningTable.Arn, ""]
   ProvisioningQueueUrl:

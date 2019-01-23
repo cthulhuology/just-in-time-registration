@@ -14,12 +14,9 @@ module.exports = () => ({
       'Action': [
         'iot:Connect'
       ],
-      'Resource': [],
-      'Condition': {
-        'StringLike': {
-          'iot:Certificate.Subject.Title': 'iot'
-        }
-      }
+      'Resource': [
+        `arn:aws:iot:${process.env.AWS_REGION}:${process.env.AccountId}:client/` + '${iot:Certificate.Subject.CommonName}'
+      ]
     },
 
     /**
@@ -31,13 +28,8 @@ module.exports = () => ({
         'iot:Subscribe'
       ],
       'Resource': [
-        `arn:aws:iot:${process.env.AWS_REGION}:${process.env.AccountId}:topic/$aws/things/` + '${iot:Connection.Thing.ThingName}/shadow/*'
-      ],
-      'Condition': {
-        'StringLike': {
-          'iot:Certificate.Subject.Title': 'iot'
-        }
-      }
+        `arn:aws:iot:${process.env.AWS_REGION}:${process.env.AccountId}:topicfilter/$aws/things/` + '${iot:Connection.Thing.ThingName}/*'
+      ]
     },
 
     /**
@@ -49,13 +41,8 @@ module.exports = () => ({
         'iot:Receive'
       ],
       'Resource': [
-        `arn:aws:iot:${process.env.AWS_REGION}:${process.env.AccountId}:topic/$aws/things/` + '${iot:Connection.Thing.ThingName}/shadow/*'
-      ],
-      'Condition': {
-        'StringLike': {
-          'iot:Certificate.Subject.Title': 'iot'
-        }
-      }
+        `arn:aws:iot:${process.env.AWS_REGION}:${process.env.AccountId}:topic/$aws/things/` + '${iot:Connection.Thing.ThingName}/*'
+      ]
     },
 
     /**
@@ -67,13 +54,8 @@ module.exports = () => ({
         'iot:Publish'
       ],
       'Resource': [
-        `arn:aws:iot:${process.env.AWS_REGION}:${process.env.AccountId}:topic/$aws/things/` + '${iot:Connection.Thing.ThingName}/shadow/*'
-      ],
-      'Condition': {
-        'StringLike': {
-          'iot:Certificate.Subject.Title': 'iot'
-        }
-      }
+        `arn:aws:iot:${process.env.AWS_REGION}:${process.env.AccountId}:topic/$aws/things/` + '${iot:Connection.Thing.ThingName}/*'
+      ]
     },
 
     /**
@@ -88,7 +70,7 @@ module.exports = () => ({
         'iot:DeleteThingShadow'
       ],
       'Resource': [
-        `arn:aws:iot:${process.env.AWS_REGION}:${process.env.AccountId}:topic/$aws/things/` + '${iot:Connection.Thing.ThingName}/shadow/*'
+        `arn:aws:iot:${process.env.AWS_REGION}:${process.env.AccountId}:thing/` + '${iot:Connection.Thing.ThingName}'
       ]
     }
   ]

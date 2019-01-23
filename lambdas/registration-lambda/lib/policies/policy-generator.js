@@ -7,12 +7,6 @@ const greengrassPolicy = require('./greengrass-policy');
  */
 const getGreengrassPolicy = (policies) => {
   const policy = greengrassPolicy();
-  // Adding `iot:Connect` resources.
-  policies.greengrass.connect.forEach((resource) => {
-    policy.Statement[0].Resource.push(
-      `arn:aws:iot:${process.env.AWS_REGION}:${process.env.AccountId}:client/${resource}`
-    );
-  });
   // Adding `iot:Subscribe` resources.
   policies.greengrass.subscribe.forEach((resource) => {
     policy.Statement[1].Resource.push(
@@ -22,7 +16,7 @@ const getGreengrassPolicy = (policies) => {
   // Adding `iot:Receive` resources.
   policies.greengrass.receive.forEach((resource) => {
     policy.Statement[2].Resource.push(
-      `arn:aws:iot:${process.env.AWS_REGION}:${process.env.AccountId}:topicfilter/${resource}`
+      `arn:aws:iot:${process.env.AWS_REGION}:${process.env.AccountId}:topic/${resource}`
     );
   });
   // Adding `iot:Publish` resources.
@@ -40,12 +34,6 @@ const getGreengrassPolicy = (policies) => {
  */
 const getIotPolicy = (policies) => {
   const policy = iotPolicy();
-  // Adding `iot:Connect` resources.
-  policies.iot.connect.forEach((resource) => {
-    policy.Statement[0].Resource.push(
-      `arn:aws:iot:${process.env.AWS_REGION}:${process.env.AccountId}:client/${resource}`
-    );
-  });
   // Adding `iot:Subscribe` resources.
   policies.iot.subscribe.forEach((resource) => {
     policy.Statement[1].Resource.push(
@@ -55,7 +43,7 @@ const getIotPolicy = (policies) => {
   // Adding `iot:Receive` resources.
   policies.iot.receive.forEach((resource) => {
     policy.Statement[2].Resource.push(
-      `arn:aws:iot:${process.env.AWS_REGION}:${process.env.AccountId}:topicfilter/${resource}`
+      `arn:aws:iot:${process.env.AWS_REGION}:${process.env.AccountId}:topic/${resource}`
     );
   });
   // Adding `iot:Publish` resources.
@@ -73,12 +61,10 @@ const getIotPolicy = (policies) => {
 module.exports = (certificate) => {
   const policies = { iot: {}, greengrass: {} };
   // Gathering policies for IoT devices.
-  policies.iot.connect = process.env.DeviceConnectPolicy.split(',');
   policies.iot.subscribe = process.env.DeviceSubscribePolicy.split(',');
   policies.iot.receive = process.env.DeviceReceivePolicy.split(',');
   policies.iot.publish = process.env.DevicePublishPolicy.split(',');
   // Gathering policies for Greengrass devices.
-  policies.greengrass.connect = process.env.GreengrassConnectPolicy.split(',');
   policies.greengrass.subscribe = process.env.GreengrassSubscribePolicy.split(',');
   policies.greengrass.receive = process.env.GreengrassReceivePolicy.split(',');
   policies.greengrass.publish = process.env.GreengrassPublishPolicy.split(',');

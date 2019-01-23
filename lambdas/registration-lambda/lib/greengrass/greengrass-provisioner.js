@@ -2,13 +2,16 @@ const _                = require('lodash');
 const AWS              = require('aws-sdk');
 const loggerDefinition = require('./logger-definition');
 
+// Creating a new `greengrass` client.
+const greengrass = new AWS.Greengrass();
+
 /**
  * Creates a new logger definition to be used
  * by new Greengrass Groups.
  */
 const createLoggerDefinition = () => {
   return new Promise((resolve, reject) => {
-    new AWS.Greengrass().createLoggerDefinition({
+    greengrass.createLoggerDefinition({
       InitialVersion: {
         Loggers: loggerDefinition
       }
@@ -25,7 +28,7 @@ const createLoggerDefinition = () => {
  */
 const createCoreDefinition = (thing, certificateArn) => {
   return new Promise((resolve, reject) => {
-    new AWS.Greengrass().createCoreDefinition({
+    greengrass.createCoreDefinition({
       InitialVersion: {
         Cores: [{
           CertificateArn: certificateArn,
@@ -47,7 +50,7 @@ const createCoreDefinition = (thing, certificateArn) => {
  */
 const createGroupDefinition = (name, coreArn, loggerArn) => {
   return new Promise((resolve, reject) => {
-    new AWS.Greengrass().createGroup({
+    greengrass.createGroup({
       InitialVersion: {
         CoreDefinitionVersionArn: coreArn,
         LoggerDefinitionVersionArn: loggerArn
@@ -64,7 +67,7 @@ const createGroupDefinition = (name, coreArn, loggerArn) => {
  */
 const associateRoleToGroup = (roleArn, groupId) => {
   return new Promise((resolve, reject) => {
-    new AWS.Greengrass().associateRoleToGroup({
+    greengrass.associateRoleToGroup({
       RoleArn: roleArn,
       GroupId: groupId 
     }, (err, data) => (err ? reject(err) : resolve(data)));
