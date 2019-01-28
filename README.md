@@ -50,6 +50,12 @@ The universal JITR lambda function takes the following actions when a new device
  
  > Note that the activation of the certificate is the latest step to be executed in order to guarantee that when a device suceeds to connect, every resources is already available on the account.
 
+<br />
+<p align="center">
+  <img src="assets/just-in-time-registration.png" />
+</p>
+<br />
+
  ## Certificate fields
  
  You can embed any standard field into your X.509 certificates, but to enforce consistency and create appropriate semantics across a fleet, this implementation requires you to provide the following fields in the device certificate :
