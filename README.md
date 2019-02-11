@@ -8,7 +8,7 @@
 > A universal implementation of the AWS JITR for IoT devices and AWS Greengrass.
 
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat-square)](contributing.md)
-[![CodeFactor](https://www.codefactor.io/repository/github/hqarroum/just-in-time-registration/badge)](https://www.codefactor.io/repository/github/hqarroum/just-in-time-registration)
+[![CodeFactor](https://www.codefactor.io/repository/github/aws-blocks/just-in-time-registration/badge)](https://www.codefactor.io/repository/github/aws-blocks/just-in-time-registration)
 
 Current version: **1.0.0**
 
